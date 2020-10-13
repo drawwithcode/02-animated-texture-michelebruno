@@ -1,22 +1,16 @@
 let cols, rows, fr, bg,
-    scaleX = 30,
-    scaleY = 80,
+    scaleX = 70,
+    scaleY = 26,
     zoff = 0,
-    strkW = 4,
-    rainbowMode = false;
+    strkW = 6,
+    rainbowMode = true,
+    patternIndex = 0;
 
-const increment = 0.05,
+const increment = 0.02,
     PALETTE = [],
-    CELL_PATTERNS = [
-        BLANK = ({w, h, col} = {}) => {
-            noFill();
+    PATTERNS = [
+        ({w, h, col} = {}) => {
 
-            rainbowMode ? stroke(col) : stroke(PALETTE[4])// stroke(PALETTE[1])
-            rectMode(CENTER);
-            rect(w / 2, h / 2, w - strkW * 2, h - strkW * 2);
-
-        },
-        PLAIN = ({w, h, col} = {}) => {
             push();
 
             if (!rainbowMode || typeof col === "undefined") {
@@ -24,58 +18,8 @@ const increment = 0.05,
             }
 
             rectMode(CENTER);
-            rect(w / 2, h / 2, w, h);
-            pop();
-        },
-        STRIPED = ({w, h, col = PALETTE[4]}) => {
-            push();
 
-            let weight = 6;
-
-            strokeWeight(weight);
-
-
-            if (rainbowMode && typeof col !== "undefined") {
-                stroke(col);
-            } else stroke(PALETTE[4]);
-
-
-            translate(strkW, strkW);
-
-            for (let i = 0; (i + 1) < (w - strkW) / weight; i += 2) {
-                line(
-                    i * weight,
-                    0,
-                    i * weight,
-                    h - strkW * 2,
-                );
-            }
-
-            pop();
-        },
-        STRIPED_HORIZONTAL = ({w, h, col = PALETTE[4]}) => {
-            push();
-
-            let weight = 6;
-
-            strokeWeight(weight);
-
-
-            if (rainbowMode && typeof col !== "undefined") {
-                stroke(col);
-            } else stroke(PALETTE[4]);
-
-
-            translate(strkW, strkW);
-
-            for (let i = 0; (i + 1) < (h - strkW) / weight; i += 2) {
-                line(
-                    0,
-                    i * weight,
-                    w - strkW * 2,
-                    i * weight
-                );
-            }
+            rect(scaleX / 2, scaleY / 2, w, h);
 
             pop();
         },
@@ -90,13 +34,10 @@ const increment = 0.05,
 
             noStroke();
 
-            if (!rainbowMode)
-                fill(PALETTE[PALETTE.length - 1])
-
             for (let y = 0; y < r; y++) {
                 for (let x = 0; x < c; x++) {
                     if ((x % 2 === 0 && y % 2 === 1) || (x % 2 === 1 && y % 2 === 0)) {
-                        rect(x * s, y * s, s);
+                        rect(x * s, y * s, w / 6, s);
                     }
                 }
             }
@@ -104,9 +45,6 @@ const increment = 0.05,
             pop();
         },
     ],
-    /**
-     * @type {Cell[]}
-     */
     cells = [];
 
 function setup() {
@@ -150,24 +88,28 @@ function draw() {
         for (let x = 0; x < cols; x++) {
             let index = x + y * cols,
                 c = cells[index],
-                n = noise(xoff, yoff, zoff),
-                n2 = noise(xoff, yoff, zoff / 2);
+                n = noise(xoff + mouseX * increment / 10, yoff + mouseY * increment / 10, zoff),
+                n2 = n * 2,
+                col = n2 < 1
+                    ? lerpColor(color(255, 0, 0), color(0, 0, 255), n2)
+                    : lerpColor(color(0, 0, 255), color(0, 255, 255), n2 - 1);
 
-
+            // console.log(col, n2, x, y, n)
             c.run({
-                patternIndex: floor(n2 * CELL_PATTERNS.length),
-                col: lerpColor(color(200,0,0), color(0,0,255), n2),
-                widthRatio: map(n, 0,1,0.3,1.3),
+                col,
+                widthRatio: map(n, 0, 1, 0.1, 1),
+                heightRatio: map(n, 0, 1, 0.1, 1),
             });
             xoff += increment;
         }
 
         yoff += increment;
     }
-    zoff += increment / 2;
+    zoff += increment;
 
 
     fr.html(floor(frameRate()));
+
 }
 
 function Cell(
@@ -177,7 +119,6 @@ function Cell(
         col,
         cellWidth = scaleX,
         cellHeight = scaleY,
-        patternIndex = 0
     } = {}
 ) {
 
@@ -188,13 +129,7 @@ function Cell(
     this.width = cellWidth;
     this.initialHeight = cellHeight;
     this.initialWidth = cellWidth;
-    this.patternIndex = patternIndex;
-    this.pattern = CELL_PATTERNS[patternIndex];
 
-    this.update = function () {
-        let i = abs(this.patternIndex % CELL_PATTERNS.length);
-        this.pattern = CELL_PATTERNS[i];
-    }
 
     this.draw = function () {
         push();
@@ -204,22 +139,21 @@ function Cell(
         pop();
     }
 
-    this.run = function ({patternIndex, col, width, widthRatio}) {
-        if (typeof patternIndex !== "undefined")
-            this.patternIndex = patternIndex;
+    this.run = function ({col, width, widthRatio, heightRatio}) {
+
+        this.pattern = PATTERNS[0];
 
         if (typeof width !== "undefined") {
             this.width = width;
         } else if (typeof widthRatio !== "undefined") {
             this.width = this.initialWidth * widthRatio;
         }
+        if (typeof heightRatio !== "undefined") {
+            this.height = this.initialHeight * heightRatio;
+        }
 
-        if (typeof col !== "undefined")
+        if (typeof col !== "undefined" && col instanceof p5.Color)
             this.color = col;
-
-        // this.update();
-
-        this.pattern = CELL_PATTERNS[1];
 
         this.draw();
     }
@@ -236,4 +170,8 @@ function windowResized() {
 
 function mousePressed() {
     rainbowMode = !rainbowMode;
+
+    // patternIndex++;
+
+    // patternIndex = patternIndex % PATTERNS.length;
 }
