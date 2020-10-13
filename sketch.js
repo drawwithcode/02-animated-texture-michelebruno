@@ -17,7 +17,7 @@ const cells = [],
             }
 
             rectMode(CENTER);
-            rect(scaleX / 2, scaleY / 2, scaleX - 2 * strkW, h);
+            rect(scaleX / 2, scaleY / 2, w, h);
 
             pop();
         },
@@ -73,12 +73,14 @@ function setup() {
 function draw() {
     background(bg)
 
-    translate(width % scaleX / 2, height % scaleY);
+    translate((width % scaleX + scaleX) / 2, height % scaleY);
 
     let yoff = 0;
 
     for (let y = 0; y < rows; y++) {
+
         let xoff = 0;
+
         for (let x = 0; x < cols; x++) {
             let index = x + y * cols,
                 c = cells[index],
@@ -99,7 +101,7 @@ function draw() {
         yoff += increment;
     }
 
-    zoff += increment /2;
+    zoff += increment / 2;
 
 }
 
@@ -129,14 +131,19 @@ function Cell(
         push();
         fill(this.color)
         translate(this.x, this.y);
-        if (patternIndex === 1 && this.row % 2) translate(scaleX / 4, 0);
+        if (patternIndex === 1) {
+            this.row % 2 ?
+                translate(scaleX / 7, 0) :
+                translate(-scaleX / 7, 0);
+        }
+
         this.pattern({w: this.width, h: this.height, col: this.color});
         pop();
     }
 
     this.run = function ({col, width, widthRatio, heightRatio}) {
 
-        this.pattern = PATTERNS[patternIndex % PATTERNS.length];
+        this.pattern = PATTERNS[patternIndex];
 
         if (typeof width !== "undefined") {
             this.width = width;
@@ -148,8 +155,9 @@ function Cell(
             this.height = this.initialHeight * heightRatio;
         }
 
-        if (typeof col !== "undefined" && col instanceof p5.Color)
+        if (typeof col !== "undefined" && col instanceof p5.Color) {
             this.color = col;
+        }
 
         this.draw();
     }
@@ -160,7 +168,6 @@ function windowResized() {
 }
 
 function mousePressed() {
-    // rainbowMode = !rainbowMode;
 
     patternIndex++;
 
@@ -170,5 +177,4 @@ function mousePressed() {
         increment = 0.03;
     } else increment = 0.07
 
-    // patternIndex = patternIndex % PATTERNS.length;
 }
