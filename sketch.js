@@ -32,7 +32,7 @@ const cells = [],
             strokeWeight(3)
 
             for (let i = 0; i < 3; i++) {
-                translate(0, cos(frameCount / 5) + h / 4);
+                translate(0, cos(frameCount / 6) + h / 3);
                 bezier(0, 0, w * .2, 0, w * .2, h * .6, w / 2, h * .6);
                 bezier(w / 2, h * .6, w * .8, h * .6, w * .8, 0, w, 0);
             }
@@ -85,15 +85,15 @@ function draw() {
             let index = x + y * cols,
                 c = cells[index],
                 n = noise(xoff + mouseX * increment / 10, yoff + mouseY * increment / 10, zoff),
-                n2 = n * 2,
+                n2 = noise(xoff + 1000 + mouseX * increment / 10, yoff + 1000 + mouseY * increment / 10, zoff) * 2,
                 col = n2 < 1
                     ? lerpColor(color(255, 0, 0), color(0, 0, 255), n2)
                     : lerpColor(color(0, 0, 255), color(0, 255, 255), n2 - 1);
 
             c.run({
                 col,
-                widthRatio: map(n, 0, 1, 0.1, 1),
-                heightRatio: map(n, 0, 1, 0.4, 1),
+                widthRatio: map(n, 0, 1, 0.2, 1),
+                heightRatio: map(n, 0, 1, 0.3, .8),
             });
             xoff += increment;
         }
