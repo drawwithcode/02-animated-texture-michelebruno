@@ -7,19 +7,11 @@ let cols, rows, fr, bg,
 
 const increment = 0.05,
     PALETTE = [],
-    /**
-     * @type {Eater[]}
-     */
-    EATERS = [],
-    EATER_ACTION = [
-        ADDS = true,
-        REMOVES = false,
-    ],
     CELL_PATTERNS = [
         BLANK = ({w, h, col} = {}) => {
             noFill();
 
-            rainbowMode ? stroke(col) : stroke(PALETTE[1])
+            rainbowMode ? stroke(col) : stroke(PALETTE[4])// stroke(PALETTE[1])
             rectMode(CENTER);
             rect(w / 2, h / 2, w - strkW * 2, h - strkW * 2);
 
@@ -28,14 +20,14 @@ const increment = 0.05,
             push();
 
             if (!rainbowMode || typeof col === "undefined") {
-                fill(PALETTE[1])
+                fill(PALETTE[4])// fill(PALETTE[1])
             }
 
             rectMode(CENTER);
             rect(w / 2, h / 2, w, h);
             pop();
         },
-        STRIPED = ({w, h, col = PALETTE[2]}) => {
+        STRIPED = ({w, h, col = PALETTE[4]}) => {
             push();
 
             let weight = 6;
@@ -45,7 +37,33 @@ const increment = 0.05,
 
             if (rainbowMode && typeof col !== "undefined") {
                 stroke(col);
-            } else stroke(PALETTE[2]);
+            } else stroke(PALETTE[4]);
+
+
+            translate(strkW, strkW);
+
+            for (let i = 0; (i + 1) < (w - strkW) / weight; i += 2) {
+                line(
+                    i * weight,
+                    0,
+                    i * weight,
+                    h - strkW * 2,
+                );
+            }
+
+            pop();
+        },
+        STRIPED_HORIZONTAL = ({w, h, col = PALETTE[4]}) => {
+            push();
+
+            let weight = 6;
+
+            strokeWeight(weight);
+
+
+            if (rainbowMode && typeof col !== "undefined") {
+                stroke(col);
+            } else stroke(PALETTE[4]);
 
 
             translate(strkW, strkW);
@@ -118,18 +136,12 @@ function setup() {
         }
 
     }
-
-    let eatersCount = random([2, 5, 8])
-
-    for (let i = 0; i < eatersCount; i++) {
-        // EATERS.push(new Eater({col: floor(random(cols)), row: floor(random(rows))}))
-    }
 }
 
 function draw() {
     background(bg)
 
-    translate(width % scaleX, scaleY + height % scaleY);
+    translate(width % scaleX, height % scaleY);
 
     let yoff = 0;
 
@@ -144,7 +156,8 @@ function draw() {
 
             c.run({
                 patternIndex: floor(n2 * CELL_PATTERNS.length),
-                col: getNoisedColor(n, n2)
+                col: lerpColor(color(200,0,0), color(0,0,255), n2),
+                widthRatio: map(n, 0,1,0.3,1.3),
             });
             xoff += increment;
         }
@@ -153,58 +166,8 @@ function draw() {
     }
     zoff += increment / 2;
 
-    EATERS.forEach(e => e.run());
 
     fr.html(floor(frameRate()));
-}
-
-/**
- *
- * @param action
- * @param direction
- * @param col
- * @param row
- * @constructor
- */
-function Eater(
-    {
-        action = ADDS,
-        direction,
-        col,
-        row
-    }
-) {
-    this.action = action;
-    this.direction = noise(zoff) * TWO_PI;
-    this.col = col;
-    this.row = row;
-
-    console.log("New eater", this)
-
-    this.draw = function () {
-
-        push();
-
-        fill('orange');
-
-        ellipseMode(CORNER);
-
-        ellipse(this.col * scaleX, this.row * scaleY, this.scaleX, this.scaleX);
-
-        pop();
-    };
-
-    this.run = function () {
-        // Calculates current index
-
-        // Takes action if position changed
-
-        this.draw();
-
-
-    };
-
-
 }
 
 function Cell(
@@ -241,14 +204,23 @@ function Cell(
         pop();
     }
 
-    this.run = function ({patternIndex, col}) {
+    this.run = function ({patternIndex, col, width, widthRatio}) {
         if (typeof patternIndex !== "undefined")
             this.patternIndex = patternIndex;
+
+        if (typeof width !== "undefined") {
+            this.width = width;
+        } else if (typeof widthRatio !== "undefined") {
+            this.width = this.initialWidth * widthRatio;
+        }
 
         if (typeof col !== "undefined")
             this.color = col;
 
-        this.update();
+        // this.update();
+
+        this.pattern = CELL_PATTERNS[1];
+
         this.draw();
     }
 }
